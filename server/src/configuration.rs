@@ -892,4 +892,31 @@ mod tests {
             Ok(())
         });
     }
+
+    #[test]
+    fn check_system_accounts_config_parsing() {
+        Jail::expect_with(|jail| {
+            jail.clear_env();
+            jail.set_env("LLDAP_JWT_SECRET", "secret");
+            jail.create_file(
+                "lldap_config.toml",
+                r#"
+                [[system_accounts]]
+                id = "tinyauth_service"
+                email = "tinyauth@example.com"
+                display_name = "TinyAuth Service Account"
+                password = "secret_password"
+                groups = ["lldap_admin"]
+                "#,
+            )?;
+            let config = init(default_run_opts()).unwrap();
+            assert_eq!(config.system_accounts.len(), 1);
+            let account = &config.system_accounts[0];
+            assert_eq!(account.id.as_str(), "tinyauth_service");
+            assert_eq!(account.email, "tinyauth@example.com");
+            assert_eq!(account.display_name.as_deref(), Some("TinyAuth Service Account"));
+            assert_eq!(account.groups, vec!["lldap_admin".to_string()]);
+            Ok(())
+        });
+    }
 }

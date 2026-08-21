@@ -23,6 +23,7 @@ pub struct Model {
     pub uuid: Uuid,
     pub modified_date: chrono::NaiveDateTime,
     pub password_modified_date: chrono::NaiveDateTime,
+    pub is_system: bool,
 }
 
 impl EntityName for Entity {
@@ -44,6 +45,7 @@ pub enum Column {
     Uuid,
     ModifiedDate,
     PasswordModifiedDate,
+    IsSystem,
 }
 
 impl ColumnTrait for Column {
@@ -129,6 +131,7 @@ impl From<Model> for lldap_domain::types::User {
             attributes: Vec::new(),
             modified_date: user.modified_date,
             password_modified_date: user.password_modified_date,
+            is_system: user.is_system,
         }
     }
 }
