@@ -25,7 +25,7 @@
         rustVersion = "1.91.0";
         
         # Rust toolchain with required components
-        rustToolchain = pkgs.rust-bin.stable.${rustVersion}.default.override {
+        rustToolchain = pkgs.rust-bin.stable.latest.default.override {
           extensions = [ "rust-src" "clippy" "rustfmt" ];
           targets = [ 
             "wasm32-unknown-unknown" 
