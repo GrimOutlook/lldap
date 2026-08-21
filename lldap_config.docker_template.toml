@@ -91,11 +91,10 @@
 ## System Accounts (Immutable / Read-Only).
 ## Define static system accounts that are automatically provisioned on boot.
 ## Admins cannot modify or delete these accounts via the Web UI.
+## Only 'id' is required; email defaults to '<id>@localhost' if omitted.
 # [[system_accounts]]
 # id = "tinyauth_service"
-# email = "tinyauth_service@example.com"
 # display_name = "TinyAuth Service Account"
-# password = "REPLACE_WITH_SERVICE_PASSWORD"
 # groups = ["lldap_admin"]
 
 ## Database URL.
