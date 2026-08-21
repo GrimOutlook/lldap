@@ -35,7 +35,7 @@
           ];
         };
 
-        craneLib = crane.lib.${system}.overrideToolchain rustToolchain;
+        craneLib = (crane.mkLib pkgs).overrideToolchain rustToolchain;
 
         # Common build inputs
         nativeBuildInputs = with pkgs; [
