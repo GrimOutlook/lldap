@@ -129,7 +129,7 @@ impl<Handler: BackendHandler> Mutation<Handler> {
         let handler = context
             .get_writeable_handler(&user_id)
             .ok_or_else(field_error_callback(&span, "Unauthorized user update"))?;
-        if let Ok(existing_user) = handler.get_user(&user_id).await {
+        if let Ok(existing_user) = handler.get_user_details(&user_id).await {
             if existing_user.is_system {
                 return Err("Operation forbidden: System accounts defined in lldap_config.toml are read-only".into());
             }
@@ -291,7 +291,7 @@ impl<Handler: BackendHandler> Mutation<Handler> {
             span.in_scope(|| debug!("Cannot delete current user"));
             return Err("Cannot delete current user".into());
         }
-        if let Ok(existing_user) = handler.get_user(&user_id).await {
+        if let Ok(existing_user) = handler.get_user_details(&user_id).await {
             if existing_user.is_system {
                 return Err("Operation forbidden: System accounts defined in lldap_config.toml are read-only".into());
             }
@@ -902,7 +902,7 @@ mod tests {
             }
         "#;
         let mut mock = MockTestBackendHandler::new();
-        mock.expect_get_user()
+        mock.expect_get_user_details()
             .with(eq(&UserId::new("sys_user")))
             .return_once(|_| {
                 Ok(DomainUser {

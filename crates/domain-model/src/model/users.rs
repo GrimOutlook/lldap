@@ -64,6 +64,7 @@ impl ColumnTrait for Column {
             Column::Uuid => ColumnType::String(StringLen::N(36)),
             Column::ModifiedDate => ColumnType::DateTime,
             Column::PasswordModifiedDate => ColumnType::DateTime,
+            Column::IsSystem => ColumnType::Boolean,
         }
         .def()
     }
