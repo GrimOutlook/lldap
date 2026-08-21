@@ -130,21 +130,31 @@
         packages = {
           default = craneLib.buildPackage {
             src = craneLib.cleanCargoSource (craneLib.path ./.);
-            
+
             inherit nativeBuildInputs buildInputs;
-            
+
+            # The root Cargo.toml is workspace-only (no [package] section), so
+            # crane can't infer a name/version from it and falls back to the
+            # placeholder "cargo-package"/"0.0.1" -- which `lib.getExe`
+            # (assumes mainProgram == pname) then looks for at
+            # $out/bin/cargo-package, a binary that doesn't exist (the real
+            # one is $out/bin/lldap, from the "-p lldap" member crate below).
+            pname = "lldap";
+            version = "0.6.3";
+
             # Build only the server by default
             cargoExtraArgs = "-p lldap";
-            
+
             # Skip tests in the package build
             doCheck = false;
-            
+
             meta = with pkgs.lib; {
               description = "Light LDAP implementation for authentication";
               homepage = "https://github.com/lldap/lldap";
               license = licenses.gpl3Only;
               maintainers = with maintainers; [ ];
               platforms = platforms.unix;
+              mainProgram = "lldap";
             };
           };
         };
