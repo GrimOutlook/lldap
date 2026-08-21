@@ -136,15 +136,8 @@ impl SystemAccountConfig {
         if let Ok(val) = std::env::var(&exact_env) {
             return Ok(Some(SecUtf8::from(val)));
         }
-        let upper_env = format!("LLDAP_SYSTEM_USER_PASSWORD_{}", self.id.as_str().to_uppercase());
-        if let Ok(val) = std::env::var(&upper_env) {
-            return Ok(Some(SecUtf8::from(val)));
-        }
         let exact_file_env = format!("LLDAP_SYSTEM_USER_PASSWORD_FILE_{}", self.id.as_str());
-        let file_path = std::env::var(&exact_file_env).or_else(|_| {
-            std::env::var(format!("LLDAP_SYSTEM_USER_PASSWORD_FILE_{}", self.id.as_str().to_uppercase()))
-        });
-        if let Ok(path_str) = file_path {
+        if let Ok(path_str) = std::env::var(&exact_file_env) {
             let content = std::fs::read_to_string(&path_str)
                 .map_err(|e| anyhow::anyhow!("Failed to read password file from env {} for system user '{}': {}", exact_file_env, self.id.as_str(), e))?;
             return Ok(Some(SecUtf8::from(content.trim().to_string())));
