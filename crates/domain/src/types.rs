@@ -539,6 +539,8 @@ pub struct User {
     pub attributes: Vec<Attribute>,
     pub modified_date: NaiveDateTime,
     pub password_modified_date: NaiveDateTime,
+    #[serde(default)]
+    pub is_system: bool,
 }
 
 #[cfg(feature = "test")]
@@ -554,6 +556,7 @@ impl Default for User {
             attributes: Vec::new(),
             modified_date: epoch,
             password_modified_date: epoch,
+            is_system: false,
         }
     }
 }

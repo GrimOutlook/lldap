@@ -129,6 +129,11 @@ impl<Handler: BackendHandler> Mutation<Handler> {
         let handler = context
             .get_writeable_handler(&user_id)
             .ok_or_else(field_error_callback(&span, "Unauthorized user update"))?;
+        if let Ok(existing_user) = handler.get_user(&user_id).await {
+            if existing_user.is_system {
+                return Err("Operation forbidden: System accounts defined in lldap_config.toml are read-only".into());
+            }
+        }
         let is_admin = context.validation_result.is_admin();
         let schema = handler.get_schema().await?;
         // Consolidate attributes and fields into a combined attribute list
@@ -285,6 +290,11 @@ impl<Handler: BackendHandler> Mutation<Handler> {
         if context.validation_result.user == user_id {
             span.in_scope(|| debug!("Cannot delete current user"));
             return Err("Cannot delete current user".into());
+        }
+        if let Ok(existing_user) = handler.get_user(&user_id).await {
+            if existing_user.is_system {
+                return Err("Operation forbidden: System accounts defined in lldap_config.toml are read-only".into());
+            }
         }
         handler.delete_user(&user_id).instrument(span).await?;
         Ok(Success::new())

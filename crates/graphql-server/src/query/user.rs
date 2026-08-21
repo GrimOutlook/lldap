@@ -59,6 +59,10 @@ impl<Handler: BackendHandler> User<Handler> {
         self.user.user_id.as_str()
     }
 
+    fn is_system(&self) -> bool {
+        self.user.is_system
+    }
+
     fn email(&self) -> &str {
         self.user.email.as_str()
     }

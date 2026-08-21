@@ -88,6 +88,16 @@
 ## Alternatively, you can set it to "always" to reset every time the server starts.
 # force_ldap_user_pass_reset = false
 
+## System Accounts (Immutable / Read-Only).
+## Define static system accounts that are automatically provisioned on boot.
+## Admins cannot modify or delete these accounts via the Web UI.
+# [[system_accounts]]
+# id = "tinyauth_service"
+# email = "tinyauth_service@example.com"
+# display_name = "TinyAuth Service Account"
+# password = "REPLACE_WITH_SERVICE_PASSWORD"
+# groups = ["lldap_admin"]
+
 ## Database URL.
 ## This encodes the type of database (SQlite, MySQL, or PostgreSQL)
 ## , the path, the user, password, and sometimes the mode (when

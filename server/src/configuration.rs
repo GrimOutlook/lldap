@@ -103,6 +103,21 @@ impl std::default::Default for HealthcheckOptions {
 pub struct HttpUrl(pub Url);
 
 #[derive(Clone, Deserialize, Serialize, derive_builder::Builder, derive_more::Debug)]
+#[builder(pattern = "owned")]
+pub struct SystemAccountConfig {
+    pub id: UserId,
+    pub email: String,
+    #[builder(default)]
+    pub display_name: Option<String>,
+    #[builder(default)]
+    pub password: Option<SecUtf8>,
+    #[builder(default)]
+    pub password_file: Option<PathBuf>,
+    #[builder(default)]
+    pub groups: Vec<String>,
+}
+
+#[derive(Clone, Deserialize, Serialize, derive_builder::Builder, derive_more::Debug)]
 #[builder(pattern = "owned", build_fn(name = "private_build"))]
 pub struct Configuration {
     #[builder(default = r#"String::from("::")"#)]
@@ -155,6 +170,8 @@ pub struct Configuration {
     server_setup: Option<ServerSetupConfig>,
     #[builder(default)]
     pub healthcheck_options: HealthcheckOptions,
+    #[builder(default)]
+    pub system_accounts: Vec<SystemAccountConfig>,
 }
 
 impl std::default::Default for Configuration {
