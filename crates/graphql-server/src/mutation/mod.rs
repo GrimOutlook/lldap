@@ -891,4 +891,39 @@ mod tests {
             ]
         );
     }
+
+    #[tokio::test]
+    async fn test_delete_system_user_forbidden() {
+        const QUERY: &str = r#"
+            mutation DeleteUser($userId: String!) {
+                deleteUser(userId: $userId) {
+                    ok
+                }
+            }
+        "#;
+        let mut mock = MockTestBackendHandler::new();
+        mock.expect_get_user()
+            .with(eq(&UserId::new("sys_user")))
+            .return_once(|_| {
+                Ok(DomainUser {
+                    user_id: UserId::new("sys_user"),
+                    is_system: true,
+                    ..Default::default()
+                })
+            });
+        let context = Context::<MockTestBackendHandler>::new_for_tests(
+            mock,
+            ValidationResults {
+                user: UserId::new("admin"),
+                permission: Permission::Admin,
+            },
+        );
+        let vars = Variables::from([("userId".to_string(), InputValue::scalar("sys_user"))]);
+        let schema = mutation_schema(
+            Query::<MockTestBackendHandler>::new(),
+            Mutation::<MockTestBackendHandler>::new(),
+        );
+        let res = execute(QUERY, None, &schema, &vars, &context).await;
+        assert!(res.is_err());
+    }
 }
