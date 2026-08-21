@@ -106,9 +106,7 @@ pub struct HttpUrl(pub Url);
 #[builder(pattern = "owned")]
 pub struct SystemAccountConfig {
     pub id: UserId,
-    #[serde(default)]
-    #[builder(default)]
-    pub email: Option<String>,
+    pub email: String,
     #[serde(default)]
     #[builder(default)]
     pub display_name: Option<String>,
@@ -124,13 +122,6 @@ pub struct SystemAccountConfig {
 }
 
 impl SystemAccountConfig {
-    #[allow(dead_code)]
-    pub fn get_email(&self) -> String {
-        self.email
-            .clone()
-            .unwrap_or_else(|| format!("{}@localhost", self.id.as_str()))
-    }
-
     #[allow(dead_code)]
     pub fn get_password(&self) -> Result<Option<SecUtf8>> {
         if let Some(ref pass) = self.password {
@@ -951,7 +942,7 @@ mod tests {
             assert_eq!(config.system_accounts.len(), 1);
             let account = &config.system_accounts[0];
             assert_eq!(account.id.as_str(), "tinyauth_service");
-            assert_eq!(account.get_email(), "tinyauth@example.com");
+            assert_eq!(account.email, "tinyauth@example.com");
             assert_eq!(account.display_name.as_deref(), Some("TinyAuth Service Account"));
             assert_eq!(account.groups, vec!["lldap_admin".to_string()]);
             Ok(())
