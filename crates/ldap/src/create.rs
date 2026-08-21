@@ -227,6 +227,7 @@ async fn create_user(
             email: Email::from(email.unwrap_or_default()),
             display_name,
             attributes: new_user_attributes,
+            is_system: false,
         })
         .await
         .map_err(|e| LdapError {

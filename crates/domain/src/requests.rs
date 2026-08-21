@@ -9,6 +9,7 @@ pub struct CreateUserRequest {
     pub email: Email,
     pub display_name: Option<String>,
     pub attributes: Vec<Attribute>,
+    pub is_system: bool,
 }
 
 #[derive(PartialEq, Eq, Debug, Serialize, Deserialize, Clone, Default)]

@@ -29,6 +29,7 @@ pub enum Users {
     Uuid,
     ModifiedDate,
     PasswordModifiedDate,
+    IsSystem,
 }
 
 #[derive(DeriveIden, PartialEq, Eq, Debug, Serialize, Deserialize, Clone, Copy)]
@@ -1161,6 +1162,27 @@ async fn migrate_to_v11(transaction: DatabaseTransaction) -> Result<DatabaseTran
     Ok(transaction)
 }
 
+async fn migrate_to_v12(transaction: DatabaseTransaction) -> Result<DatabaseTransaction, DbErr> {
+    let builder = transaction.get_database_backend();
+    // Add is_system to users table, for the read-only system accounts
+    // feature -- distinguishes accounts managed declaratively (via
+    // system_accounts config) from normal user-editable accounts.
+    transaction
+        .execute(
+            builder.build(
+                Table::alter().table(Users::Table).add_column(
+                    ColumnDef::new(Users::IsSystem)
+                        .boolean()
+                        .not_null()
+                        .default(false),
+                ),
+            ),
+        )
+        .await?;
+
+    Ok(transaction)
+}
+
 // This is needed to make an array of async functions.
 macro_rules! to_sync {
     ($l:ident) => {
@@ -1192,6 +1214,7 @@ pub(crate) async fn migrate_from_version(
         to_sync!(migrate_to_v9),
         to_sync!(migrate_to_v10),
         to_sync!(migrate_to_v11),
+        to_sync!(migrate_to_v12),
     ];
     assert_eq!(migrations.len(), (LAST_SCHEMA_VERSION.0 - 1) as usize);
     for migration in 2..=last_version.0 {

@@ -122,7 +122,6 @@ pub struct SystemAccountConfig {
 }
 
 impl SystemAccountConfig {
-    #[allow(dead_code)]
     pub fn get_password(&self) -> Result<Option<SecUtf8>> {
         if let Some(ref pass) = self.password {
             return Ok(Some(pass.clone()));

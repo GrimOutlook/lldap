@@ -81,6 +81,7 @@ impl<Handler: BackendHandler> Mutation<Handler> {
                     .ok_or_else(|| anyhow!("Email is required when creating a new user"))?,
                 display_name: user.display_name.or(display_name),
                 attributes,
+                is_system: false,
             })
             .instrument(span.clone())
             .await?;

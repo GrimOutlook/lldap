@@ -84,6 +84,73 @@ async fn create_admin_user(handler: &SqlBackendHandler, config: &Configuration) 
         .context("Error adding admin user to group")
 }
 
+async fn create_system_accounts(
+    handler: &SqlBackendHandler,
+    config: &Configuration,
+) -> Result<()> {
+    for account in &config.system_accounts {
+        let existing = handler
+            .list_users(Some(UserRequestFilter::UserId(account.id.clone())), false)
+            .await
+            .context(format!(
+                "while checking whether system account '{}' already exists",
+                account.id.as_str()
+            ))?;
+        if !existing.is_empty() {
+            continue;
+        }
+        warn!(
+            "Could not find system account \"{}\", trying to create it",
+            account.id.as_str()
+        );
+        handler
+            .create_user(CreateUserRequest {
+                user_id: account.id.clone(),
+                email: account.email.clone().into(),
+                display_name: account.display_name.clone(),
+                is_system: true,
+                ..Default::default()
+            })
+            .await
+            .context(format!(
+                "while creating system account '{}'",
+                account.id.as_str()
+            ))?;
+        if let Some(password) = account.get_password().context(format!(
+            "while resolving password for system account '{}'",
+            account.id.as_str()
+        ))? {
+            register_password(handler, account.id.clone(), &password)
+                .await
+                .context(format!(
+                    "while setting password for system account '{}'",
+                    account.id.as_str()
+                ))?;
+        } else {
+            warn!(
+                "No password configured for system account \"{}\"; it will be unable to bind until one is set",
+                account.id.as_str()
+            );
+        }
+        for group_name in &account.groups {
+            ensure_group_exists(handler, group_name).await?;
+            let groups = handler
+                .list_groups(Some(GroupRequestFilter::DisplayName(group_name.as_str().into())))
+                .await?;
+            assert_eq!(groups.len(), 1);
+            handler
+                .add_user_to_group(&account.id, groups[0].id)
+                .await
+                .context(format!(
+                    "while adding system account '{}' to group '{}'",
+                    account.id.as_str(),
+                    group_name
+                ))?;
+        }
+    }
+    Ok(())
+}
+
 async fn ensure_group_exists(handler: &SqlBackendHandler, group_name: &str) -> Result<()> {
     if handler
         .list_groups(Some(GroupRequestFilter::DisplayName(group_name.into())))
@@ -200,6 +267,9 @@ async fn set_up_server(config: Configuration) -> Result<(ServerBuilder, Database
             &config.ldap_user_dn
         ))?;
     }
+    create_system_accounts(&backend_handler, &config)
+        .await
+        .context("while setting up system accounts")?;
     if config.force_update_private_key || config.force_ldap_user_pass_reset.is_yes() {
         bail!(
             "Restart the server without --force-update-private-key or --force-ldap-user-pass-reset to continue."
