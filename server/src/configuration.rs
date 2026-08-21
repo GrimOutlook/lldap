@@ -107,14 +107,50 @@ pub struct HttpUrl(pub Url);
 pub struct SystemAccountConfig {
     pub id: UserId,
     pub email: String,
+    #[serde(default)]
     #[builder(default)]
     pub display_name: Option<String>,
+    #[serde(default)]
     #[builder(default)]
     pub password: Option<SecUtf8>,
+    #[serde(default)]
     #[builder(default)]
     pub password_file: Option<PathBuf>,
+    #[serde(default)]
     #[builder(default)]
     pub groups: Vec<String>,
+}
+
+impl SystemAccountConfig {
+    #[allow(dead_code)]
+    pub fn get_password(&self) -> Result<Option<SecUtf8>> {
+        if let Some(ref pass) = self.password {
+            return Ok(Some(pass.clone()));
+        }
+        if let Some(ref path) = self.password_file {
+            let content = std::fs::read_to_string(path)
+                .map_err(|e| anyhow::anyhow!("Failed to read password file for system user '{}': {}", self.id.as_str(), e))?;
+            return Ok(Some(SecUtf8::from(content.trim().to_string())));
+        }
+        let exact_env = format!("LLDAP_SYSTEM_USER_PASSWORD_{}", self.id.as_str());
+        if let Ok(val) = std::env::var(&exact_env) {
+            return Ok(Some(SecUtf8::from(val)));
+        }
+        let upper_env = format!("LLDAP_SYSTEM_USER_PASSWORD_{}", self.id.as_str().to_uppercase());
+        if let Ok(val) = std::env::var(&upper_env) {
+            return Ok(Some(SecUtf8::from(val)));
+        }
+        let exact_file_env = format!("LLDAP_SYSTEM_USER_PASSWORD_FILE_{}", self.id.as_str());
+        let file_path = std::env::var(&exact_file_env).or_else(|_| {
+            std::env::var(format!("LLDAP_SYSTEM_USER_PASSWORD_FILE_{}", self.id.as_str().to_uppercase()))
+        });
+        if let Ok(path_str) = file_path {
+            let content = std::fs::read_to_string(&path_str)
+                .map_err(|e| anyhow::anyhow!("Failed to read password file from env {} for system user '{}': {}", exact_file_env, self.id.as_str(), e))?;
+            return Ok(Some(SecUtf8::from(content.trim().to_string())));
+        }
+        Ok(None)
+    }
 }
 
 #[derive(Clone, Deserialize, Serialize, derive_builder::Builder, derive_more::Debug)]
@@ -916,6 +952,29 @@ mod tests {
             assert_eq!(account.email, "tinyauth@example.com");
             assert_eq!(account.display_name.as_deref(), Some("TinyAuth Service Account"));
             assert_eq!(account.groups, vec!["lldap_admin".to_string()]);
+            Ok(())
+        });
+    }
+
+    #[test]
+    fn check_system_accounts_env_password() {
+        Jail::expect_with(|jail| {
+            jail.clear_env();
+            jail.set_env("LLDAP_JWT_SECRET", "secret");
+            jail.set_env("LLDAP_SYSTEM_USER_PASSWORD_tinyauth_service", "env_secret_password");
+            jail.create_file(
+                "lldap_config.toml",
+                r#"
+                [[system_accounts]]
+                id = "tinyauth_service"
+                email = "tinyauth@example.com"
+                "#,
+            )?;
+            let config = init(default_run_opts()).unwrap();
+            assert_eq!(config.system_accounts.len(), 1);
+            let account = &config.system_accounts[0];
+            let password = account.get_password().unwrap();
+            assert_eq!(password.unwrap().unsecure(), "env_secret_password");
             Ok(())
         });
     }
