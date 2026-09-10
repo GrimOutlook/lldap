@@ -159,6 +159,12 @@
         frontend = craneLib.buildPackage {
           src = craneLib.path ./.;
 
+          # The root Cargo.toml is a bare [workspace] with no [package], so
+          # crane cannot infer these and falls back to placeholders (with a
+          # warning at every eval of a config that references this package).
+          pname = "lldap-frontend";
+          version = "0.6.3";
+
           nativeBuildInputs = nativeBuildInputs ++ [
             wasmBindgenCli120
             pkgs.binaryen
